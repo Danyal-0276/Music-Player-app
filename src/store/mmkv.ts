@@ -1,7 +1,7 @@
-import { createMMKV } from 'react-native-mmkv';
+import { MMKV } from 'react-native-mmkv';
 import { DEFAULT_SETTINGS, type AppSettings } from '../types';
 
-export const storage = createMMKV({ id: 'harmonic-settings' });
+export const storage = new MMKV({ id: 'harmonic-settings' });
 
 const SETTINGS_KEY = 'app.settings';
 
