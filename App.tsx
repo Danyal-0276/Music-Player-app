@@ -17,6 +17,7 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { useLibraryStore } from './src/store/libraryStore';
 import { useSettingsStore } from './src/store/settingsStore';
 import { setupAudioPlayer } from './src/services/audio/player';
+import { PlayerActiveTrackSync } from './src/services/audio/PlayerActiveTrackSync';
 
 function AppContent() {
   const { colors, isDark } = useTheme();
@@ -58,6 +59,7 @@ function AppContent() {
   return (
     <>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <PlayerActiveTrackSync />
       <RootNavigator />
     </>
   );

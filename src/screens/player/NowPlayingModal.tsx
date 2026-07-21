@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -10,10 +10,8 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import TrackPlayer, {
   RepeatMode,
-  useActiveMediaItem,
   useIsPlaying,
   useProgress,
 } from '@rntp/player';
@@ -21,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
 import { usePlayerUiStore } from '../../store/playerUiStore';
 import { useLibraryStore } from '../../store/libraryStore';
+import { useNowPlaying } from '../../hooks/useNowPlaying';
 import {
   cycleRepeatMode,
   togglePlayPause,
@@ -59,17 +58,22 @@ function ControlIcon({
   );
 }
 
+function cleanMeta(value: string | undefined | null, fallback: string) {
+  const v = (value ?? '').trim();
+  if (!v || v === '<unknown>' || v.toLowerCase() === 'unknown') return fallback;
+  return v;
+}
+
 export function NowPlayingModal() {
   const visible = usePlayerUiStore((s) => s.nowPlayingVisible);
   const setVisible = usePlayerUiStore((s) => s.setNowPlayingVisible);
-  const { colors, fonts, artBorderRadius, isDark, reduceMotion } = useTheme();
+  const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
+  const { colors, fonts, artBorderRadius, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const item = useActiveMediaItem();
+  const { track, activeId } = useNowPlaying();
   const playing = useIsPlaying();
   const { position, duration } = useProgress(250);
-  const tracks = useLibraryStore((s) => s.tracks);
-  const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
   const [repeat, setRepeat] = useState(RepeatMode.Off);
   const [shuffle, setShuffle] = useState(false);
 
@@ -79,17 +83,32 @@ export function NowPlayingModal() {
     setShuffle(TrackPlayer.isShuffleEnabled());
   }, [visible]);
 
-  const track = useMemo(
-    () => tracks.find((t) => t.id === item?.mediaId),
-    [tracks, item?.mediaId]
-  );
+  // Push clean library metadata back to the native player on track change.
+  useEffect(() => {
+    if (!track) return;
+    const index = TrackPlayer.getActiveMediaItemIndex();
+    if (index == null) return;
+    try {
+      TrackPlayer.updateMetadata(index, {
+        title: track.title,
+        artist: cleanMeta(track.artist, 'Unknown Artist'),
+        albumTitle: cleanMeta(track.album, ''),
+        artworkUrl: track.artworkUri ?? undefined,
+      });
+    } catch {
+      // Native may not be ready yet.
+    }
+  }, [track?.id]);
 
   const artSize = Math.min(width - 64, 320);
   const favorited = !!track?.isFavorite;
   const repeatOn = repeat !== RepeatMode.Off;
-  const mediaKey = String(item?.mediaId ?? 'track');
 
-  if (!item) return null;
+  if (!activeId && !track) return null;
+
+  const title = cleanMeta(track?.title, 'Unknown');
+  const artist = cleanMeta(track?.artist, 'Unknown Artist');
+  const artworkUri = track?.artworkUri;
 
   return (
     <Modal
@@ -141,6 +160,7 @@ export function NowPlayingModal() {
 
         <View style={styles.artArea}>
           <View
+            key={`art-${activeId ?? 'none'}`}
             style={[
               styles.artShadow,
               {
@@ -151,58 +171,46 @@ export function NowPlayingModal() {
               },
             ]}
           >
-            <Animated.View
-              key={`np-art-${mediaKey}`}
-              entering={reduceMotion ? undefined : FadeIn.duration(320)}
-              exiting={reduceMotion ? undefined : FadeOut.duration(200)}
-              style={StyleSheet.absoluteFill}
-            >
-              {item.artworkUrl ? (
-                <Image
-                  source={{ uri: String(item.artworkUrl) }}
-                  style={{ width: artSize, height: artSize, borderRadius: artBorderRadius }}
-                  contentFit="cover"
-                  recyclingKey={mediaKey}
-                  transition={220}
-                />
-              ) : (
-                <View style={styles.artFallback}>
-                  <Ionicons name="musical-notes" size={64} color={colors.textMuted} />
-                </View>
-              )}
-            </Animated.View>
+            {artworkUri ? (
+              <Image
+                source={{ uri: artworkUri }}
+                style={{ width: artSize, height: artSize, borderRadius: artBorderRadius }}
+                contentFit="cover"
+                recyclingKey={activeId ?? artworkUri}
+                transition={200}
+              />
+            ) : (
+              <View style={styles.artFallback}>
+                <Ionicons name="musical-notes" size={64} color={colors.textMuted} />
+              </View>
+            )}
           </View>
         </View>
 
-        <View style={styles.info}>
-          <Animated.View
-            key={`np-meta-${mediaKey}`}
-            entering={reduceMotion ? undefined : FadeIn.duration(320)}
+        <View key={`meta-${activeId ?? 'none'}`} style={styles.info}>
+          <Text
+            numberOfLines={2}
+            style={{
+              color: colors.text,
+              fontFamily: fonts.display,
+              fontSize: 26,
+              textAlign: 'center',
+            }}
           >
-            <Text
-              numberOfLines={2}
-              style={{
-                color: colors.text,
-                fontFamily: fonts.display,
-                fontSize: 26,
-                textAlign: 'center',
-              }}
-            >
-              {item.title}
-            </Text>
-            <Text
-              numberOfLines={1}
-              style={{
-                color: colors.textSecondary,
-                fontFamily: fonts.body,
-                fontSize: 16,
-                textAlign: 'center',
-                marginTop: 6,
-              }}
-            >
-              {item.artist}
-            </Text>
-          </Animated.View>
+            {title}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{
+              color: colors.textSecondary,
+              fontFamily: fonts.body,
+              fontSize: 16,
+              textAlign: 'center',
+              marginTop: 6,
+            }}
+          >
+            {artist}
+          </Text>
         </View>
 
         <View style={styles.progress}>
@@ -285,11 +293,7 @@ export function NowPlayingModal() {
             accent={colors.accent}
             soft={colors.accentSoft}
           >
-            <Ionicons
-              name={repeat === RepeatMode.One ? 'repeat' : 'repeat'}
-              size={24}
-              color={repeatOn ? colors.accent : colors.textSecondary}
-            />
+            <Ionicons name="repeat" size={24} color={repeatOn ? colors.accent : colors.textSecondary} />
             {repeat === RepeatMode.One ? (
               <View style={[styles.oneBadge, { backgroundColor: colors.accent }]}>
                 <Text style={styles.oneBadgeText}>1</Text>

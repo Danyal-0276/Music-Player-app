@@ -3,6 +3,7 @@ import type { Track } from '../types';
 
 type PlayerUiState = {
   queue: Track[];
+  activeTrackId: string | null;
   nowPlayingVisible: boolean;
   contextTrack: Track | null;
   playlistPickTrackIds: string[] | null;
@@ -10,10 +11,12 @@ type PlayerUiState = {
   setContextTrack: (track: Track | null) => void;
   setPlaylistPickTrackIds: (ids: string[] | null) => void;
   setQueue: (tracks: Track[]) => void;
+  setActiveTrackId: (id: string | null) => void;
 };
 
 export const usePlayerUiStore = create<PlayerUiState>((set) => ({
   queue: [],
+  activeTrackId: null,
   nowPlayingVisible: false,
   contextTrack: null,
   playlistPickTrackIds: null,
@@ -21,4 +24,5 @@ export const usePlayerUiStore = create<PlayerUiState>((set) => ({
   setContextTrack: (contextTrack) => set({ contextTrack }),
   setPlaylistPickTrackIds: (playlistPickTrackIds) => set({ playlistPickTrackIds }),
   setQueue: (queue) => set({ queue }),
+  setActiveTrackId: (activeTrackId) => set({ activeTrackId }),
 }));

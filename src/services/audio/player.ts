@@ -42,6 +42,9 @@ export async function setupAudioPlayer() {
   TrackPlayer.setupPlayer({
     contentType: 'music',
     handleAudioBecomingNoisy: settings.pauseOnNoisy,
+    // Keep library metadata — embedded/stream tags often overwrite with "<unknown>"
+    // or wrong artwork and make Now Playing look stuck on the wrong song.
+    autoUpdateMetadataFromStream: false,
     android: {
       wakeMode: 'local',
       taskRemovedBehavior: 'continue',
@@ -69,11 +72,12 @@ export async function playTracks(tracks: Track[], startIndex = 0) {
   const items = tracks.map(trackToMediaItem);
   TrackPlayer.setMediaItems(items, startIndex);
   usePlayerUiStore.getState().setQueue(tracks);
-  TrackPlayer.play();
   const current = tracks[startIndex];
   if (current) {
+    usePlayerUiStore.getState().setActiveTrackId(current.id);
     void useLibraryStore.getState().recordPlay(current.id);
   }
+  TrackPlayer.play();
 }
 
 export async function playTrackNext(track: Track) {

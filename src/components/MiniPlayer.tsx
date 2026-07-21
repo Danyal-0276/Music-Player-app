@@ -2,10 +2,11 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown } from 'react-native-reanimated';
-import { useActiveMediaItem, useIsPlaying } from '@rntp/player';
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
+import { useIsPlaying } from '@rntp/player';
 import { useTheme } from '../theme/ThemeProvider';
 import { usePlayerUiStore } from '../store/playerUiStore';
+import { useNowPlaying } from '../hooks/useNowPlaying';
 import { togglePlayPause } from '../services/audio/player';
 import TrackPlayer from '@rntp/player';
 
@@ -14,15 +15,24 @@ type Props = {
   embedded?: boolean;
 };
 
+function cleanMeta(value: string | undefined | null, fallback: string) {
+  const v = (value ?? '').trim();
+  if (!v || v === '<unknown>' || v.toLowerCase() === 'unknown') return fallback;
+  return v;
+}
+
 export function MiniPlayer({ embedded = false }: Props) {
   const { colors, fonts, artBorderRadius, reduceMotion, isDark } = useTheme();
-  const item = useActiveMediaItem();
+  const { track, activeId } = useNowPlaying();
   const playing = useIsPlaying();
   const setNowPlayingVisible = usePlayerUiStore((s) => s.setNowPlayingVisible);
 
-  if (!item) return null;
+  if (!track && !activeId) return null;
 
-  const mediaKey = String(item.mediaId ?? item.title ?? 'track');
+  const title = cleanMeta(track?.title, 'Unknown');
+  const artist = cleanMeta(track?.artist, 'Unknown Artist');
+  const artworkUri = track?.artworkUri;
+  const mediaKey = activeId ?? track?.id ?? 'track';
 
   return (
     <Animated.View
@@ -49,39 +59,26 @@ export function MiniPlayer({ embedded = false }: Props) {
             { borderRadius: artBorderRadius, backgroundColor: colors.surfaceElevated },
           ]}
         >
-          <Animated.View
-            key={`art-${mediaKey}`}
-            entering={reduceMotion ? undefined : FadeIn.duration(280)}
-            exiting={reduceMotion ? undefined : FadeOut.duration(180)}
-            style={StyleSheet.absoluteFill}
-          >
-            {item.artworkUrl ? (
-              <Image
-                source={{ uri: String(item.artworkUrl) }}
-                style={[styles.artImg, { borderRadius: artBorderRadius }]}
-                contentFit="cover"
-                recyclingKey={mediaKey}
-                transition={200}
-              />
-            ) : (
-              <View style={styles.artFallback}>
-                <Ionicons name="musical-note" size={18} color={colors.textMuted} />
-              </View>
-            )}
-          </Animated.View>
+          {artworkUri ? (
+            <Image
+              key={mediaKey}
+              source={{ uri: artworkUri }}
+              style={[styles.artImg, { borderRadius: artBorderRadius }]}
+              contentFit="cover"
+              recyclingKey={mediaKey}
+              transition={180}
+            />
+          ) : (
+            <Ionicons name="musical-note" size={18} color={colors.textMuted} />
+          )}
         </View>
-        <View style={styles.meta}>
-          <Animated.View
-            key={`meta-${mediaKey}`}
-            entering={reduceMotion ? undefined : FadeIn.duration(280)}
-          >
-            <Text numberOfLines={1} style={{ color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 14 }}>
-              {item.title ?? 'Unknown'}
-            </Text>
-            <Text numberOfLines={1} style={{ color: colors.textSecondary, fontFamily: fonts.body, fontSize: 12 }}>
-              {item.artist ?? 'Unknown Artist'}
-            </Text>
-          </Animated.View>
+        <View style={styles.meta} key={`mini-meta-${mediaKey}`}>
+          <Text numberOfLines={1} style={{ color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 14 }}>
+            {title}
+          </Text>
+          <Text numberOfLines={1} style={{ color: colors.textSecondary, fontFamily: fonts.body, fontSize: 12 }}>
+            {artist}
+          </Text>
         </View>
         <Pressable
           onPress={togglePlayPause}
@@ -131,7 +128,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   artImg: { width: 44, height: 44 },
-  artFallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   meta: { flex: 1, minWidth: 0 },
   ctrl: {
     padding: 8,

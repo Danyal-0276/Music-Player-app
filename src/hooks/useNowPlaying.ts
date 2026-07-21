@@ -1,11 +1,28 @@
-import { useActiveMediaItem, useIsPlaying } from '@rntp/player';
+import { useMemo } from 'react';
+import { useIsPlaying } from '@rntp/player';
+import { usePlayerUiStore } from '../store/playerUiStore';
+import { useLibraryStore } from '../store/libraryStore';
+import type { Track } from '../types';
 
-/** Stable now-playing ids for list highlighting (avoids per-row player subscriptions). */
+/** Resolve the playing track from our library/queue — not polluted stream metadata. */
 export function useNowPlaying() {
-  const item = useActiveMediaItem();
-  const playing = useIsPlaying();
+  const activeId = usePlayerUiStore((s) => s.activeTrackId);
+  const queue = usePlayerUiStore((s) => s.queue);
+  const tracks = useLibraryStore((s) => s.tracks);
+  const isPlaying = useIsPlaying();
+
+  const track = useMemo<Track | null>(() => {
+    if (!activeId) return null;
+    return (
+      queue.find((t) => t.id === activeId) ??
+      tracks.find((t) => t.id === activeId) ??
+      null
+    );
+  }, [activeId, queue, tracks]);
+
   return {
-    activeId: item?.mediaId ?? null,
-    isPlaying: !!playing,
+    activeId,
+    isPlaying: !!isPlaying,
+    track,
   };
 }
