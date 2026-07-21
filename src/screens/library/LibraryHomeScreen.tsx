@@ -26,6 +26,7 @@ import { AnimatedFlashList } from '../../components/AnimatedFlashList';
 import { filterAndSortTracks } from '../../utils/tracks';
 import { playTracks } from '../../services/audio/player';
 import { openAppSettings } from '../../services/permissions';
+import { useNowPlaying } from '../../hooks/useNowPlaying';
 import type { LibraryFilter, LibrarySortKey, Track } from '../../types';
 
 const FILTERS: { key: LibraryFilter; label: string }[] = [
@@ -70,6 +71,7 @@ export function LibraryHomeScreen() {
   const [showSort, setShowSort] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const { activeId, isPlaying } = useNowPlaying();
 
   const data = useMemo(
     () =>
@@ -89,7 +91,6 @@ export function LibraryHomeScreen() {
       },
     ],
     opacity: interpolate(chromeHidden.value, [0, 1], [1, 0]),
-    marginBottom: interpolate(chromeHidden.value, [0, 1], [0, -HEADER_TRAVEL]),
   }));
 
   const exitSelection = useCallback(() => {
@@ -115,9 +116,48 @@ export function LibraryHomeScreen() {
     setSelectedIds(new Set(data.map((t) => t.id)));
   }, [data]);
 
-  const onPlay = (track: Track, index: number) => {
-    void playTracks(data, index);
-  };
+  const onPlay = useCallback(
+    (_track: Track, index: number) => {
+      void playTracks(data, index);
+    },
+    [data]
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: Track; index: number }) => {
+      const active = activeId === item.id;
+      return (
+        <SongRow
+          track={item}
+          selectionMode={selectionMode}
+          selected={selectedIds.has(item.id)}
+          isActive={active}
+          isPlaying={active && isPlaying}
+          onPress={() => {
+            if (selectionMode) toggleSelect(item.id);
+            else onPlay(item, index);
+          }}
+          onLongPress={() => {
+            if (selectionMode) toggleSelect(item.id);
+            else enterSelection(item.id);
+          }}
+          onFavorite={selectionMode ? undefined : () => void toggleFavorite(item.id)}
+          onMore={selectionMode ? undefined : () => setContextTrack(item)}
+        />
+      );
+    },
+    [
+      activeId,
+      isPlaying,
+      selectionMode,
+      selectedIds,
+      toggleSelect,
+      enterSelection,
+      onPlay,
+      toggleFavorite,
+      setContextTrack,
+    ]
+  );
 
   if (permission !== 'granted') {
     return (
@@ -362,6 +402,7 @@ export function LibraryHomeScreen() {
             style={styles.list}
             onScroll={onScroll}
             scrollEventThrottle={16}
+            drawDistance={250}
             refreshControl={
               <RefreshControl
                 refreshing={isScanning}
@@ -369,23 +410,7 @@ export function LibraryHomeScreen() {
                 tintColor={colors.accent}
               />
             }
-            renderItem={({ item, index }) => (
-              <SongRow
-                track={item}
-                selectionMode={selectionMode}
-                selected={selectedIds.has(item.id)}
-                onPress={() => {
-                  if (selectionMode) toggleSelect(item.id);
-                  else onPlay(item, index);
-                }}
-                onLongPress={() => {
-                  if (selectionMode) toggleSelect(item.id);
-                  else enterSelection(item.id);
-                }}
-                onFavorite={selectionMode ? undefined : () => void toggleFavorite(item.id)}
-                onMore={selectionMode ? undefined : () => setContextTrack(item)}
-              />
-            )}
+            renderItem={renderItem}
             contentContainerStyle={{ paddingBottom: 180 }}
           />
         )}

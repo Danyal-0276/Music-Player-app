@@ -7,6 +7,7 @@ import { useLibraryStore } from '../../store/libraryStore';
 import { usePlayerUiStore } from '../../store/playerUiStore';
 import { SongRow } from '../../components/SongRow';
 import { playTracks } from '../../services/audio/player';
+import { useNowPlaying } from '../../hooks/useNowPlaying';
 import type { LibraryStackParamList } from '../../navigation/types';
 import type { Track } from '../../types';
 
@@ -17,6 +18,7 @@ export function ArtistDetailScreen() {
   const tracks = useLibraryStore((s) => s.tracks);
   const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
   const setContextTrack = usePlayerUiStore((s) => s.setContextTrack);
+  const { activeId, isPlaying } = useNowPlaying();
 
   const data = useMemo(
     () =>
@@ -46,14 +48,19 @@ export function ArtistDetailScreen() {
         data={data}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 120 }}
-        renderItem={({ item, index }) => (
-          <SongRow
-            track={item}
-            onPress={() => onPlay(item, index)}
-            onFavorite={() => void toggleFavorite(item.id)}
-            onMore={() => setContextTrack(item)}
-          />
-        )}
+        renderItem={({ item, index }) => {
+          const active = activeId === item.id;
+          return (
+            <SongRow
+              track={item}
+              isActive={active}
+              isPlaying={active && isPlaying}
+              onPress={() => onPlay(item, index)}
+              onFavorite={() => void toggleFavorite(item.id)}
+              onMore={() => setContextTrack(item)}
+            />
+          );
+        }}
       />
     </View>
   );

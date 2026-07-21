@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import {
   useSharedValue,
-  useAnimatedScrollHandler,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import type { NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 
 type ChromeContextValue = {
   chromeHidden: SharedValue<number>;
-  onScroll: ReturnType<typeof useAnimatedScrollHandler>;
+  /** JS-thread scroll handler — safe with FlashList recycling. */
+  onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   revealChrome: () => void;
 };
 
@@ -18,31 +19,26 @@ export function ChromeProvider({ children }: { children: React.ReactNode }) {
   const chromeHidden = useSharedValue(0);
   const lastY = useSharedValue(0);
 
-  const onScroll = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      const y = event.contentOffset.y;
-      const dy = y - lastY.value;
-      if (y <= 12) {
-        chromeHidden.value = withTiming(0, { duration: 220 });
-      } else if (dy > 6 && y > 40) {
-        chromeHidden.value = withTiming(1, { duration: 220 });
-      } else if (dy < -6) {
-        chromeHidden.value = withTiming(0, { duration: 220 });
-      }
-      lastY.value = y;
-    },
-  });
-
-  const value = useMemo(
-    () => ({
+  const value = useMemo<ChromeContextValue>(() => {
+    return {
       chromeHidden,
-      onScroll,
+      onScroll: (event) => {
+        const y = event.nativeEvent.contentOffset.y;
+        const dy = y - lastY.value;
+        lastY.value = y;
+        if (y <= 12) {
+          chromeHidden.value = withTiming(0, { duration: 220 });
+        } else if (dy > 8 && y > 48) {
+          chromeHidden.value = withTiming(1, { duration: 220 });
+        } else if (dy < -8) {
+          chromeHidden.value = withTiming(0, { duration: 220 });
+        }
+      },
       revealChrome: () => {
         chromeHidden.value = withTiming(0, { duration: 220 });
       },
-    }),
-    [chromeHidden, onScroll]
-  );
+    };
+  }, [chromeHidden, lastY]);
 
   return <ChromeContext.Provider value={value}>{children}</ChromeContext.Provider>;
 }

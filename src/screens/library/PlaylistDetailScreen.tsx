@@ -9,6 +9,7 @@ import { usePlayerUiStore } from '../../store/playerUiStore';
 import { SongRow } from '../../components/SongRow';
 import { EmptyState } from '../../components/EmptyState';
 import { playTracks } from '../../services/audio/player';
+import { useNowPlaying } from '../../hooks/useNowPlaying';
 import type { LibraryStackParamList } from '../../navigation/types';
 import type { Track } from '../../types';
 
@@ -20,6 +21,7 @@ export function PlaylistDetailScreen() {
   const removeFromPlaylist = useLibraryStore((s) => s.removeFromPlaylist);
   const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
   const setContextTrack = usePlayerUiStore((s) => s.setContextTrack);
+  const { activeId, isPlaying } = useNowPlaying();
   const [data, setData] = useState<Track[]>([]);
 
   const load = useCallback(async () => {
@@ -55,17 +57,22 @@ export function PlaylistDetailScreen() {
           data={data}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 120 }}
-          renderItem={({ item, index }) => (
-            <SongRow
-              track={item}
-              onPress={() => void playTracks(data, index)}
-              onFavorite={() => void toggleFavorite(item.id)}
-              onMore={() => setContextTrack(item)}
-              onLongPress={() => {
-                void removeFromPlaylist(playlistId, item.id).then(load);
-              }}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            const active = activeId === item.id;
+            return (
+              <SongRow
+                track={item}
+                isActive={active}
+                isPlaying={active && isPlaying}
+                onPress={() => void playTracks(data, index)}
+                onFavorite={() => void toggleFavorite(item.id)}
+                onMore={() => setContextTrack(item)}
+                onLongPress={() => {
+                  void removeFromPlaylist(playlistId, item.id).then(load);
+                }}
+              />
+            );
+          }}
         />
       )}
     </View>

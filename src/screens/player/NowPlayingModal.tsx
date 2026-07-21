@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -10,6 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import TrackPlayer, {
   RepeatMode,
   useActiveMediaItem,
@@ -27,10 +28,41 @@ import {
 } from '../../services/audio/player';
 import { formatDurationSeconds } from '../../utils/tracks';
 
+function ControlIcon({
+  active,
+  onPress,
+  accessibilityLabel,
+  children,
+  accent,
+  soft,
+}: {
+  active: boolean;
+  onPress: () => void;
+  accessibilityLabel: string;
+  children: React.ReactNode;
+  accent: string;
+  soft: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: active }}
+      style={({ pressed }) => [
+        styles.sideBtn,
+        active && { backgroundColor: soft, borderColor: accent },
+        { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.92 : 1 }] },
+      ]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 export function NowPlayingModal() {
   const visible = usePlayerUiStore((s) => s.nowPlayingVisible);
   const setVisible = usePlayerUiStore((s) => s.setNowPlayingVisible);
-  const { colors, fonts, artBorderRadius, isDark } = useTheme();
+  const { colors, fonts, artBorderRadius, isDark, reduceMotion } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const item = useActiveMediaItem();
@@ -38,8 +70,14 @@ export function NowPlayingModal() {
   const { position, duration } = useProgress(250);
   const tracks = useLibraryStore((s) => s.tracks);
   const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
-  const [repeat, setRepeat] = useState(TrackPlayer.getRepeatMode());
-  const [shuffle, setShuffle] = useState(TrackPlayer.isShuffleEnabled());
+  const [repeat, setRepeat] = useState(RepeatMode.Off);
+  const [shuffle, setShuffle] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    setRepeat(TrackPlayer.getRepeatMode());
+    setShuffle(TrackPlayer.isShuffleEnabled());
+  }, [visible]);
 
   const track = useMemo(
     () => tracks.find((t) => t.id === item?.mediaId),
@@ -47,6 +85,9 @@ export function NowPlayingModal() {
   );
 
   const artSize = Math.min(width - 64, 320);
+  const favorited = !!track?.isFavorite;
+  const repeatOn = repeat !== RepeatMode.Off;
+  const mediaKey = String(item?.mediaId ?? 'track');
 
   if (!item) return null;
 
@@ -68,21 +109,32 @@ export function NowPlayingModal() {
         ]}
       >
         <View style={styles.header}>
-          <Pressable onPress={() => setVisible(false)} hitSlop={12} accessibilityLabel="Close">
+          <Pressable
+            onPress={() => setVisible(false)}
+            hitSlop={12}
+            accessibilityLabel="Close"
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
             <Ionicons name="chevron-down" size={28} color={colors.text} />
           </Pressable>
           <Text style={{ color: colors.textSecondary, fontFamily: fonts.bodyMedium }}>
             Now Playing
           </Text>
           <Pressable
-            onPress={() => track && toggleFavorite(track.id)}
-            hitSlop={12}
-            accessibilityLabel="Favorite"
+            onPress={() => track && void toggleFavorite(track.id)}
+            hitSlop={8}
+            accessibilityLabel={favorited ? 'Remove from favorites' : 'Add to favorites'}
+            accessibilityState={{ selected: favorited }}
+            style={({ pressed }) => [
+              styles.favBtn,
+              favorited && { backgroundColor: colors.accentSoft, borderColor: colors.accent },
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
           >
             <Ionicons
-              name={track?.isFavorite ? 'heart' : 'heart-outline'}
-              size={24}
-              color={track?.isFavorite ? colors.accent : colors.text}
+              name={favorited ? 'heart' : 'heart-outline'}
+              size={22}
+              color={favorited ? colors.accent : colors.text}
             />
           </Pressable>
         </View>
@@ -99,44 +151,58 @@ export function NowPlayingModal() {
               },
             ]}
           >
-            {item.artworkUrl ? (
-              <Image
-                source={{ uri: String(item.artworkUrl) }}
-                style={{ width: artSize, height: artSize, borderRadius: artBorderRadius }}
-                contentFit="cover"
-              />
-            ) : (
-              <View style={styles.artFallback}>
-                <Ionicons name="musical-notes" size={64} color={colors.textMuted} />
-              </View>
-            )}
+            <Animated.View
+              key={`np-art-${mediaKey}`}
+              entering={reduceMotion ? undefined : FadeIn.duration(320)}
+              exiting={reduceMotion ? undefined : FadeOut.duration(200)}
+              style={StyleSheet.absoluteFill}
+            >
+              {item.artworkUrl ? (
+                <Image
+                  source={{ uri: String(item.artworkUrl) }}
+                  style={{ width: artSize, height: artSize, borderRadius: artBorderRadius }}
+                  contentFit="cover"
+                  recyclingKey={mediaKey}
+                  transition={220}
+                />
+              ) : (
+                <View style={styles.artFallback}>
+                  <Ionicons name="musical-notes" size={64} color={colors.textMuted} />
+                </View>
+              )}
+            </Animated.View>
           </View>
         </View>
 
         <View style={styles.info}>
-          <Text
-            numberOfLines={2}
-            style={{
-              color: colors.text,
-              fontFamily: fonts.display,
-              fontSize: 26,
-              textAlign: 'center',
-            }}
+          <Animated.View
+            key={`np-meta-${mediaKey}`}
+            entering={reduceMotion ? undefined : FadeIn.duration(320)}
           >
-            {item.title}
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={{
-              color: colors.textSecondary,
-              fontFamily: fonts.body,
-              fontSize: 16,
-              textAlign: 'center',
-              marginTop: 6,
-            }}
-          >
-            {item.artist}
-          </Text>
+            <Text
+              numberOfLines={2}
+              style={{
+                color: colors.text,
+                fontFamily: fonts.display,
+                fontSize: 26,
+                textAlign: 'center',
+              }}
+            >
+              {item.title}
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={{
+                color: colors.textSecondary,
+                fontFamily: fonts.body,
+                fontSize: 16,
+                textAlign: 'center',
+                marginTop: 6,
+              }}
+            >
+              {item.artist}
+            </Text>
+          </Animated.View>
         </View>
 
         <View style={styles.progress}>
@@ -161,55 +227,100 @@ export function NowPlayingModal() {
         </View>
 
         <View style={styles.controls}>
-          <Pressable
+          <ControlIcon
+            active={shuffle}
             onPress={() => setShuffle(toggleShuffle())}
-            accessibilityLabel="Shuffle"
-            style={styles.sideBtn}
+            accessibilityLabel={shuffle ? 'Shuffle on' : 'Shuffle off'}
+            accent={colors.accent}
+            soft={colors.accentSoft}
           >
             <Ionicons
               name="shuffle"
               size={24}
               color={shuffle ? colors.accent : colors.textSecondary}
             />
-          </Pressable>
+          </ControlIcon>
+
           <Pressable
             onPress={() => TrackPlayer.skipToPrevious()}
             accessibilityLabel="Previous"
-            style={styles.mainSide}
+            style={({ pressed }) => [styles.mainSide, { opacity: pressed ? 0.55 : 1 }]}
           >
             <Ionicons name="play-skip-back" size={32} color={colors.text} />
           </Pressable>
+
           <Pressable
             onPress={togglePlayPause}
             accessibilityLabel={playing ? 'Pause' : 'Play'}
-            style={[
+            style={({ pressed }) => [
               styles.playBtn,
-              { backgroundColor: colors.accent, shadowColor: isDark ? '#000' : colors.accent },
+              {
+                backgroundColor: colors.accent,
+                shadowColor: isDark ? '#000' : colors.accent,
+                transform: [{ scale: pressed ? 0.94 : 1 }],
+              },
             ]}
           >
             <Ionicons name={playing ? 'pause' : 'play'} size={34} color="#fff" />
           </Pressable>
+
           <Pressable
             onPress={() => TrackPlayer.skipToNext()}
             accessibilityLabel="Next"
-            style={styles.mainSide}
+            style={({ pressed }) => [styles.mainSide, { opacity: pressed ? 0.55 : 1 }]}
           >
             <Ionicons name="play-skip-forward" size={32} color={colors.text} />
           </Pressable>
-          <Pressable
+
+          <ControlIcon
+            active={repeatOn}
             onPress={() => setRepeat(cycleRepeatMode())}
-            accessibilityLabel="Repeat"
-            style={styles.sideBtn}
+            accessibilityLabel={
+              repeat === RepeatMode.One
+                ? 'Repeat one'
+                : repeat === RepeatMode.All
+                  ? 'Repeat all'
+                  : 'Repeat off'
+            }
+            accent={colors.accent}
+            soft={colors.accentSoft}
           >
             <Ionicons
-              name={repeat === RepeatMode.One ? 'repeat-outline' : 'repeat'}
+              name={repeat === RepeatMode.One ? 'repeat' : 'repeat'}
               size={24}
-              color={repeat === RepeatMode.Off ? colors.textSecondary : colors.accent}
+              color={repeatOn ? colors.accent : colors.textSecondary}
             />
             {repeat === RepeatMode.One ? (
-              <Text style={[styles.oneBadge, { color: colors.accent }]}>1</Text>
+              <View style={[styles.oneBadge, { backgroundColor: colors.accent }]}>
+                <Text style={styles.oneBadgeText}>1</Text>
+              </View>
             ) : null}
-          </Pressable>
+          </ControlIcon>
+        </View>
+
+        <View style={styles.statusRow}>
+          <Text
+            style={{
+              color: shuffle ? colors.accent : colors.textMuted,
+              fontFamily: fonts.bodyMedium,
+              fontSize: 12,
+            }}
+          >
+            {shuffle ? 'Shuffle on' : 'Shuffle off'}
+          </Text>
+          <Text
+            style={{
+              color: repeatOn ? colors.accent : colors.textMuted,
+              fontFamily: fonts.bodyMedium,
+              fontSize: 12,
+            }}
+          >
+            {repeat === RepeatMode.One
+              ? 'Repeat one'
+              : repeat === RepeatMode.All
+                ? 'Repeat all'
+                : 'Repeat off'}
+          </Text>
         </View>
       </View>
     </Modal>
@@ -224,6 +335,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
+  favBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
   artArea: { alignItems: 'center', marginVertical: 12 },
   artShadow: {
     overflow: 'hidden',
@@ -236,14 +356,12 @@ const styles = StyleSheet.create({
   info: { marginTop: 20, marginBottom: 8 },
   progress: { marginTop: 12 },
   times: { flexDirection: 'row', justifyContent: 'space-between' },
-  barTrack: { height: 4, borderRadius: 2, overflow: 'hidden', marginVertical: 12 },
-  barFill: { height: '100%' },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 28,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   playBtn: {
     width: 72,
@@ -257,6 +375,32 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
   },
   mainSide: { padding: 8 },
-  sideBtn: { padding: 8, position: 'relative' },
-  oneBadge: { position: 'absolute', right: 2, top: 2, fontSize: 10, fontWeight: '700' },
+  sideBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    position: 'relative',
+  },
+  oneBadge: {
+    position: 'absolute',
+    right: 4,
+    top: 4,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  oneBadgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },
+  statusRow: {
+    marginTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
 });

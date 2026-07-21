@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown } from 'react-native-reanimated';
 import { useActiveMediaItem, useIsPlaying } from '@rntp/player';
 import { useTheme } from '../theme/ThemeProvider';
 import { usePlayerUiStore } from '../store/playerUiStore';
@@ -21,6 +21,8 @@ export function MiniPlayer({ embedded = false }: Props) {
   const setNowPlayingVisible = usePlayerUiStore((s) => s.setNowPlayingVisible);
 
   if (!item) return null;
+
+  const mediaKey = String(item.mediaId ?? item.title ?? 'track');
 
   return (
     <Animated.View
@@ -47,23 +49,39 @@ export function MiniPlayer({ embedded = false }: Props) {
             { borderRadius: artBorderRadius, backgroundColor: colors.surfaceElevated },
           ]}
         >
-          {item.artworkUrl ? (
-            <Image
-              source={{ uri: String(item.artworkUrl) }}
-              style={[styles.artImg, { borderRadius: artBorderRadius }]}
-              contentFit="cover"
-            />
-          ) : (
-            <Ionicons name="musical-note" size={18} color={colors.textMuted} />
-          )}
+          <Animated.View
+            key={`art-${mediaKey}`}
+            entering={reduceMotion ? undefined : FadeIn.duration(280)}
+            exiting={reduceMotion ? undefined : FadeOut.duration(180)}
+            style={StyleSheet.absoluteFill}
+          >
+            {item.artworkUrl ? (
+              <Image
+                source={{ uri: String(item.artworkUrl) }}
+                style={[styles.artImg, { borderRadius: artBorderRadius }]}
+                contentFit="cover"
+                recyclingKey={mediaKey}
+                transition={200}
+              />
+            ) : (
+              <View style={styles.artFallback}>
+                <Ionicons name="musical-note" size={18} color={colors.textMuted} />
+              </View>
+            )}
+          </Animated.View>
         </View>
         <View style={styles.meta}>
-          <Text numberOfLines={1} style={{ color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 14 }}>
-            {item.title ?? 'Unknown'}
-          </Text>
-          <Text numberOfLines={1} style={{ color: colors.textSecondary, fontFamily: fonts.body, fontSize: 12 }}>
-            {item.artist ?? 'Unknown Artist'}
-          </Text>
+          <Animated.View
+            key={`meta-${mediaKey}`}
+            entering={reduceMotion ? undefined : FadeIn.duration(280)}
+          >
+            <Text numberOfLines={1} style={{ color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 14 }}>
+              {item.title ?? 'Unknown'}
+            </Text>
+            <Text numberOfLines={1} style={{ color: colors.textSecondary, fontFamily: fonts.body, fontSize: 12 }}>
+              {item.artist ?? 'Unknown Artist'}
+            </Text>
+          </Animated.View>
         </View>
         <Pressable
           onPress={togglePlayPause}
@@ -113,6 +131,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   artImg: { width: 44, height: 44 },
+  artFallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   meta: { flex: 1, minWidth: 0 },
   ctrl: {
     padding: 8,
