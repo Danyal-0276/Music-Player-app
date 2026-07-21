@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Harmonic",
-    "slug": "harmonic",
+    "name": "Orbit",
+    "slug": "orbit",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "scheme": "harmonic",
+    "scheme": "orbit",
     "newArchEnabled": true,
     "plugins": [
       "expo-dev-client",
@@ -14,7 +14,7 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Harmonic needs photo library access only if you choose artwork from your gallery.",
+          "photosPermission": "Orbit needs photo library access only if you choose artwork from your gallery.",
           "savePhotosPermission": false,
           "isAccessMediaLocationEnabled": true,
           "granularPermissions": ["audio"]
@@ -37,7 +37,7 @@
       "bundleIdentifier": "com.harmonic.offlineplayer",
       "infoPlist": {
         "UIBackgroundModes": ["audio"],
-        "NSAppleMusicUsageDescription": "Harmonic needs access to play your local music library."
+        "NSAppleMusicUsageDescription": "Orbit needs access to play your local music library."
       }
     },
     "android": {

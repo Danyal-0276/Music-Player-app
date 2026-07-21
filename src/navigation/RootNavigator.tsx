@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { LibraryHomeScreen } from '../screens/library/LibraryHomeScreen';
 import { ArtistsScreen } from '../screens/library/ArtistsScreen';
@@ -13,9 +12,11 @@ import { AlbumDetailScreen } from '../screens/library/AlbumDetailScreen';
 import { PlaylistsScreen } from '../screens/library/PlaylistsScreen';
 import { PlaylistDetailScreen } from '../screens/library/PlaylistDetailScreen';
 import { SettingsHomeScreen } from '../screens/settings/SettingsHomeScreen';
-import { MiniPlayer } from '../components/MiniPlayer';
+import { SpaceshipTabBar } from '../components/SpaceshipTabBar';
 import { NowPlayingModal } from '../screens/player/NowPlayingModal';
 import { SongContextSheet } from '../components/SongContextSheet';
+import { PlaylistPickerSheet } from '../components/PlaylistPickerSheet';
+import { ChromeProvider } from './ChromeContext';
 import type {
   LibraryStackParamList,
   RootTabParamList,
@@ -98,7 +99,7 @@ function SettingsStackNavigator() {
 }
 
 export function RootNavigator() {
-  const { colors, isDark, fonts } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const navTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),
@@ -114,62 +115,46 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            headerShown: false,
-            tabBarActiveTintColor: colors.accent,
-            tabBarInactiveTintColor: colors.tabInactive,
-            tabBarStyle: {
-              backgroundColor: colors.surface,
-              borderTopColor: colors.border,
-              height: 64,
-              paddingBottom: 8,
-              paddingTop: 6,
-            },
-            tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11 },
-            tabBarIcon: ({ color, size }) => {
-              const map: Record<string, keyof typeof Ionicons.glyphMap> = {
-                LibraryTab: 'musical-notes',
-                ArtistsTab: 'people',
-                AlbumsTab: 'disc',
-                PlaylistsTab: 'list',
-                SettingsTab: 'settings-outline',
-              };
-              return <Ionicons name={map[route.name]} size={size} color={color} />;
-            },
-          })}
-        >
-          <Tab.Screen
-            name="LibraryTab"
-            component={LibraryStackNavigator}
-            options={{ title: 'Library' }}
-          />
-          <Tab.Screen
-            name="ArtistsTab"
-            component={ArtistsStackNavigator}
-            options={{ title: 'Artists' }}
-          />
-          <Tab.Screen
-            name="AlbumsTab"
-            component={AlbumsStackNavigator}
-            options={{ title: 'Albums' }}
-          />
-          <Tab.Screen
-            name="PlaylistsTab"
-            component={PlaylistsStackNavigator}
-            options={{ title: 'Playlists' }}
-          />
-          <Tab.Screen
-            name="SettingsTab"
-            component={SettingsStackNavigator}
-            options={{ title: 'Settings' }}
-          />
-        </Tab.Navigator>
-        <MiniPlayer />
-        <NowPlayingModal />
-        <SongContextSheet />
-      </View>
+      <ChromeProvider>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <Tab.Navigator
+            tabBar={(props) => <SpaceshipTabBar {...props} />}
+            screenOptions={{
+              headerShown: false,
+              tabBarStyle: { position: 'absolute' },
+            }}
+          >
+            <Tab.Screen
+              name="LibraryTab"
+              component={LibraryStackNavigator}
+              options={{ title: 'Library' }}
+            />
+            <Tab.Screen
+              name="ArtistsTab"
+              component={ArtistsStackNavigator}
+              options={{ title: 'Artists' }}
+            />
+            <Tab.Screen
+              name="AlbumsTab"
+              component={AlbumsStackNavigator}
+              options={{ title: 'Albums' }}
+            />
+            <Tab.Screen
+              name="PlaylistsTab"
+              component={PlaylistsStackNavigator}
+              options={{ title: 'Playlists' }}
+            />
+            <Tab.Screen
+              name="SettingsTab"
+              component={SettingsStackNavigator}
+              options={{ title: 'Settings' }}
+            />
+          </Tab.Navigator>
+          <NowPlayingModal />
+          <SongContextSheet />
+          <PlaylistPickerSheet />
+        </View>
+      </ChromeProvider>
     </NavigationContainer>
   );
 }

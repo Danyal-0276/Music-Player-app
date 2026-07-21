@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -8,12 +7,15 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useLibraryStore } from '../../store/libraryStore';
+import { useChrome } from '../../navigation/ChromeContext';
 import { EmptyState } from '../../components/EmptyState';
+import { AnimatedFlashList } from '../../components/AnimatedFlashList';
 import type { LibraryStackParamList } from '../../navigation/types';
 
 export function ArtistsScreen() {
   const { colors, fonts, artBorderRadius } = useTheme();
   const insets = useSafeAreaInsets();
+  const { onScroll } = useChrome();
   const tracks = useLibraryStore((s) => s.tracks);
   const getArtists = useLibraryStore((s) => s.getArtists);
   const artists = useMemo(() => getArtists(), [getArtists, tracks]);
@@ -29,10 +31,12 @@ export function ArtistsScreen() {
           message="Scan your library to see artists from your local music."
         />
       ) : (
-        <FlashList
+        <AnimatedFlashList
           data={artists}
           keyExtractor={(item) => item.name}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ paddingBottom: 180 }}
           renderItem={({ item }) => (
             <Pressable
               style={styles.row}

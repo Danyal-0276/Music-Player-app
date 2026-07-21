@@ -38,6 +38,7 @@ type LibraryState = {
   renamePlaylist: (id: string, name: string) => Promise<void>;
   deletePlaylist: (id: string) => Promise<void>;
   addToPlaylist: (playlistId: string, trackId: string) => Promise<void>;
+  addTracksToPlaylist: (playlistId: string, trackIds: string[]) => Promise<void>;
   removeFromPlaylist: (playlistId: string, trackId: string) => Promise<void>;
   getPlaylistTracks: (playlistId: string) => Promise<Track[]>;
   getArtists: () => ArtistGroup[];
@@ -171,6 +172,11 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   addToPlaylist: async (playlistId, trackId) => {
     await db.addTrackToPlaylist(playlistId, trackId);
+    await get().loadPlaylists();
+  },
+
+  addTracksToPlaylist: async (playlistId, trackIds) => {
+    await db.addTracksToPlaylist(playlistId, trackIds);
     await get().loadPlaylists();
   },
 

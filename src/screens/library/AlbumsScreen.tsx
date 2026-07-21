@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -9,12 +8,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useLibraryStore } from '../../store/libraryStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useChrome } from '../../navigation/ChromeContext';
 import { EmptyState } from '../../components/EmptyState';
+import { AnimatedFlashList } from '../../components/AnimatedFlashList';
 import type { LibraryStackParamList } from '../../navigation/types';
 
 export function AlbumsScreen() {
   const { colors, fonts, artBorderRadius } = useTheme();
   const insets = useSafeAreaInsets();
+  const { onScroll } = useChrome();
   const { width } = useWindowDimensions();
   const albumLayout = useSettingsStore((s) => s.settings.albumLayout);
   const getAlbums = useLibraryStore((s) => s.getAlbums);
@@ -23,7 +25,6 @@ export function AlbumsScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<LibraryStackParamList>>();
   const gap = 12;
-  const cols = albumLayout === 'grid' ? 2 : 1;
   const tile = (width - 32 - gap) / 2;
 
   return (
@@ -32,11 +33,13 @@ export function AlbumsScreen() {
       {albums.length === 0 ? (
         <EmptyState title="No albums yet" message="Your albums will show up after a library scan." />
       ) : albumLayout === 'grid' ? (
-        <FlashList
+        <AnimatedFlashList
           data={albums}
           numColumns={2}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 180 }}
           renderItem={({ item }) => (
             <Pressable
               style={{ width: tile, marginBottom: 16, marginRight: gap }}
@@ -81,10 +84,12 @@ export function AlbumsScreen() {
           )}
         />
       ) : (
-        <FlashList
+        <AnimatedFlashList
           data={albums}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ paddingBottom: 180 }}
           renderItem={({ item }) => (
             <Pressable
               style={styles.row}

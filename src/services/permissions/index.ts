@@ -40,7 +40,7 @@ export async function requestNotificationPermission(): Promise<PermissionStatus>
     {
       title: 'Show playback controls',
       message:
-        'Harmonic needs notification access so you can control music from the lock screen and notification shade.',
+        'Orbit needs notification access so you can control music from the lock screen and notification shade.',
       buttonPositive: 'Allow',
       buttonNegative: 'Not now',
     }

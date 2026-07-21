@@ -15,16 +15,20 @@ import {
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useLibraryStore } from './src/store/libraryStore';
+import { useSettingsStore } from './src/store/settingsStore';
 import { setupAudioPlayer } from './src/services/audio/player';
 
 function AppContent() {
   const { colors, isDark } = useTheme();
   const init = useLibraryStore((s) => s.init);
   const initialized = useLibraryStore((s) => s.initialized);
+  const hydrateSettings = useSettingsStore((s) => s.hydrate);
+  const settingsHydrated = useSettingsStore((s) => s.hydrated);
   const [playerReady, setPlayerReady] = useState(false);
 
   useEffect(() => {
     void (async () => {
+      await hydrateSettings();
       try {
         await setupAudioPlayer();
       } catch {
@@ -34,9 +38,9 @@ function AppContent() {
       }
       await init();
     })();
-  }, [init]);
+  }, [init, hydrateSettings]);
 
-  if (!initialized || !playerReady) {
+  if (!initialized || !playerReady || !settingsHydrated) {
     return (
       <View
         style={{

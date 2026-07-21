@@ -1,22 +1,32 @@
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_SETTINGS, type AppSettings } from '../types';
-
-export const storage = new MMKV({ id: 'harmonic-settings' });
 
 const SETTINGS_KEY = 'app.settings';
 
+let memoryCache: AppSettings | null = null;
+
 export function loadSettings(): AppSettings {
-  const raw = storage.getString(SETTINGS_KEY);
-  if (!raw) {
-    return { ...DEFAULT_SETTINGS };
+  if (memoryCache) {
+    return memoryCache;
   }
+  return { ...DEFAULT_SETTINGS };
+}
+
+export async function hydrateSettings(): Promise<AppSettings> {
   try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    const raw = await AsyncStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      memoryCache = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      return memoryCache;
+    }
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    // fall through
   }
+  memoryCache = { ...DEFAULT_SETTINGS };
+  return memoryCache;
 }
 
 export function saveSettings(settings: AppSettings) {
-  storage.set(SETTINGS_KEY, JSON.stringify(settings));
+  memoryCache = settings;
+  void AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }

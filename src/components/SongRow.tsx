@@ -12,27 +12,56 @@ type Props = {
   onLongPress?: () => void;
   onFavorite?: () => void;
   onMore?: () => void;
+  selectionMode?: boolean;
+  selected?: boolean;
 };
 
-export function SongRow({ track, onPress, onLongPress, onFavorite, onMore }: Props) {
+export function SongRow({
+  track,
+  onPress,
+  onLongPress,
+  onFavorite,
+  onMore,
+  selectionMode = false,
+  selected = false,
+}: Props) {
   const { colors, fonts, densityPadding, rowHeight, artBorderRadius } = useTheme();
 
   return (
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
+      delayLongPress={280}
       accessibilityRole="button"
       accessibilityLabel={`${track.title} by ${track.artist}`}
+      accessibilityState={selectionMode ? { selected } : undefined}
       style={({ pressed }) => [
         styles.row,
         {
           minHeight: rowHeight,
           paddingVertical: densityPadding,
           opacity: pressed ? 0.72 : 1,
-          backgroundColor: pressed ? colors.accentSoft : 'transparent',
+          backgroundColor: selected
+            ? colors.accentSoft
+            : pressed
+              ? colors.accentSoft
+              : 'transparent',
         },
       ]}
     >
+      {selectionMode ? (
+        <View
+          style={[
+            styles.check,
+            {
+              borderColor: selected ? colors.accent : colors.border,
+              backgroundColor: selected ? colors.accent : 'transparent',
+            },
+          ]}
+        >
+          {selected ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+        </View>
+      ) : null}
       <View
         style={[
           styles.artWrap,
@@ -56,18 +85,19 @@ export function SongRow({ track, onPress, onLongPress, onFavorite, onMore }: Pro
         >
           {track.title}
         </Text>
-        <Text
-          numberOfLines={1}
-          style={[styles.subtitle, { color: colors.textSecondary, fontFamily: fonts.body }]}
-        >
-          {track.artist}
-          {track.album ? ` · ${track.album}` : ''}
-        </Text>
+        <View style={styles.subtitleRow}>
+          <Text
+            numberOfLines={1}
+            style={[styles.subtitle, { color: colors.textSecondary, fontFamily: fonts.body, flex: 1 }]}
+          >
+            {track.artist}
+          </Text>
+          <Text style={[styles.duration, { color: colors.textMuted, fontFamily: fonts.body }]}>
+            {formatDuration(track.durationMs)}
+          </Text>
+        </View>
       </View>
-      <Text style={[styles.duration, { color: colors.textMuted, fontFamily: fonts.body }]}>
-        {formatDuration(track.durationMs)}
-      </Text>
-      {onFavorite ? (
+      {!selectionMode && onFavorite ? (
         <Pressable
           onPress={onFavorite}
           hitSlop={10}
@@ -81,7 +111,7 @@ export function SongRow({ track, onPress, onLongPress, onFavorite, onMore }: Pro
           />
         </Pressable>
       ) : null}
-      {onMore ? (
+      {!selectionMode && onMore ? (
         <Pressable onPress={onMore} hitSlop={10} accessibilityLabel="More options" style={styles.iconBtn}>
           <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
         </Pressable>
@@ -97,6 +127,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
   },
+  check: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   artWrap: {
     width: 48,
     height: 48,
@@ -107,7 +145,12 @@ const styles = StyleSheet.create({
   art: { width: 48, height: 48 },
   meta: { flex: 1, minWidth: 0 },
   title: { fontSize: 15, marginBottom: 2 },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   subtitle: { fontSize: 13 },
-  duration: { fontSize: 12, marginLeft: 4 },
-  iconBtn: { padding: 4 },
+  duration: { fontSize: 12, flexShrink: 0 },
+  iconBtn: { padding: 4, flexShrink: 0 },
 });

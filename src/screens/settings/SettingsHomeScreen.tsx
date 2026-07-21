@@ -82,7 +82,7 @@ export function SettingsHomeScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 140 }}
+      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 180 }}
     >
       <Text style={[styles.title, { color: colors.text, fontFamily: fonts.display }]}>Settings</Text>
 
@@ -221,7 +221,7 @@ export function SettingsHomeScreen() {
           onPress={() => {
             Alert.alert(
               'Clear cache?',
-              'This removes Harmonic’s song index only — not your audio files. Next open will rescan.',
+              'This removes Orbit’s song index only — not your audio files. Next open will rescan.',
               [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -303,7 +303,7 @@ export function SettingsHomeScreen() {
         About
       </Text>
       <View style={[styles.card, { backgroundColor: colors.surface, borderRadius: radii.lg }]}>
-        <Row label="App" value="Harmonic" />
+        <Row label="App" value="Orbit" />
         <Row label="Version" value={Constants.expoConfig?.version ?? '1.0.0'} />
         <Text
           style={{

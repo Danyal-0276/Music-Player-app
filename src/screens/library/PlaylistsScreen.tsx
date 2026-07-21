@@ -15,12 +15,15 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useLibraryStore } from '../../store/libraryStore';
+import { useChrome } from '../../navigation/ChromeContext';
 import { EmptyState } from '../../components/EmptyState';
+import { AnimatedFlashList } from '../../components/AnimatedFlashList';
 import type { LibraryStackParamList } from '../../navigation/types';
 
 export function PlaylistsScreen() {
   const { colors, fonts, radii } = useTheme();
   const insets = useSafeAreaInsets();
+  const { onScroll } = useChrome();
   const playlists = useLibraryStore((s) => s.playlists);
   const loadPlaylists = useLibraryStore((s) => s.loadPlaylists);
   const createPlaylist = useLibraryStore((s) => s.createPlaylist);
@@ -77,13 +80,15 @@ export function PlaylistsScreen() {
         <EmptyState
           icon="list-outline"
           title="No playlists yet"
-          message="Create one above, then add songs from any track menu."
+          message="Create one above, then multi-select songs in Library or use a track’s menu."
         />
       ) : (
-        <FlashList
+        <AnimatedFlashList
           data={playlists}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ paddingBottom: 180 }}
           renderItem={({ item }) => (
             <Pressable
               style={styles.row}

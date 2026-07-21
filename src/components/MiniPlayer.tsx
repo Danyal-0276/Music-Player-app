@@ -4,15 +4,18 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { useActiveMediaItem, useIsPlaying } from '@rntp/player';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
 import { usePlayerUiStore } from '../store/playerUiStore';
 import { togglePlayPause } from '../services/audio/player';
 import TrackPlayer from '@rntp/player';
 
-export function MiniPlayer() {
-  const { colors, fonts, artBorderRadius, reduceMotion } = useTheme();
-  const insets = useSafeAreaInsets();
+type Props = {
+  /** When true, sits above the tab dock (no safe-area padding). */
+  embedded?: boolean;
+};
+
+export function MiniPlayer({ embedded = false }: Props) {
+  const { colors, fonts, artBorderRadius, reduceMotion, isDark } = useTheme();
   const item = useActiveMediaItem();
   const playing = useIsPlaying();
   const setNowPlayingVisible = usePlayerUiStore((s) => s.setNowPlayingVisible);
@@ -25,10 +28,11 @@ export function MiniPlayer() {
       exiting={reduceMotion ? undefined : FadeOutDown.duration(180)}
       style={[
         styles.wrap,
+        embedded && styles.embedded,
         {
-          backgroundColor: colors.miniPlayer,
-          borderTopColor: colors.border,
-          paddingBottom: Math.max(insets.bottom, 8),
+          backgroundColor: isDark ? 'rgba(28, 25, 23, 0.96)' : 'rgba(255, 255, 255, 0.96)',
+          borderColor: colors.border,
+          shadowColor: colors.accent,
         },
       ]}
     >
@@ -65,9 +69,9 @@ export function MiniPlayer() {
           onPress={togglePlayPause}
           hitSlop={12}
           accessibilityLabel={playing ? 'Pause' : 'Play'}
-          style={styles.ctrl}
+          style={[styles.ctrl, { backgroundColor: colors.accentSoft }]}
         >
-          <Ionicons name={playing ? 'pause' : 'play'} size={26} color={colors.text} />
+          <Ionicons name={playing ? 'pause' : 'play'} size={22} color={colors.accent} />
         </Pressable>
         <Pressable
           onPress={() => TrackPlayer.skipToNext()}
@@ -75,7 +79,7 @@ export function MiniPlayer() {
           accessibilityLabel="Next track"
           style={styles.ctrl}
         >
-          <Ionicons name="play-skip-forward" size={22} color={colors.text} />
+          <Ionicons name="play-skip-forward" size={20} color={colors.text} />
         </Pressable>
       </Pressable>
     </Animated.View>
@@ -87,6 +91,18 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: 8,
     paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  embedded: {
+    borderTopWidth: 0,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
   },
   content: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   art: {
@@ -98,5 +114,8 @@ const styles = StyleSheet.create({
   },
   artImg: { width: 44, height: 44 },
   meta: { flex: 1, minWidth: 0 },
-  ctrl: { padding: 6 },
+  ctrl: {
+    padding: 8,
+    borderRadius: 999,
+  },
 });

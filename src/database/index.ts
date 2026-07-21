@@ -229,20 +229,32 @@ export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
 }
 
 export async function addTrackToPlaylist(playlistId: string, trackId: string) {
+  await addTracksToPlaylist(playlistId, [trackId]);
+}
+
+export async function addTracksToPlaylist(playlistId: string, trackIds: string[]) {
+  if (trackIds.length === 0) return;
   const database = await getDatabase();
   const row = await database.getFirstAsync<{ maxPos: number | null }>(
     'SELECT MAX(position) as maxPos FROM playlist_tracks WHERE playlistId = ?',
     [playlistId]
   );
-  const position = (row?.maxPos ?? -1) + 1;
-  await database.runAsync(
-    `INSERT OR IGNORE INTO playlist_tracks (playlistId, trackId, position) VALUES (?, ?, ?)`,
-    [playlistId, trackId, position]
-  );
-  await database.runAsync('UPDATE playlists SET updatedAt = ? WHERE id = ?', [
-    Date.now(),
-    playlistId,
-  ]);
+  let position = (row?.maxPos ?? -1) + 1;
+  await database.withTransactionAsync(async () => {
+    for (const trackId of trackIds) {
+      const result = await database.runAsync(
+        `INSERT OR IGNORE INTO playlist_tracks (playlistId, trackId, position) VALUES (?, ?, ?)`,
+        [playlistId, trackId, position]
+      );
+      if (result.changes > 0) {
+        position += 1;
+      }
+    }
+    await database.runAsync('UPDATE playlists SET updatedAt = ? WHERE id = ?', [
+      Date.now(),
+      playlistId,
+    ]);
+  });
 }
 
 export async function removeTrackFromPlaylist(playlistId: string, trackId: string) {
