@@ -45,6 +45,11 @@ export async function setupAudioPlayer() {
     // Keep library metadata — embedded/stream tags often overwrite with "<unknown>"
     // or wrong artwork and make Now Playing look stuck on the wrong song.
     autoUpdateMetadataFromStream: false,
+    // Emit PlaybackProgressUpdated so the Now Playing timer can stay in sync
+    // even when MediaController getProgress() returns zeros.
+    progressSync: {
+      intervalSeconds: 0.25,
+    },
     android: {
       wakeMode: 'local',
       taskRemovedBehavior: 'continue',

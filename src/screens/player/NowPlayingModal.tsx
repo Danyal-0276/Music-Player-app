@@ -13,19 +13,19 @@ import Slider from '@react-native-community/slider';
 import TrackPlayer, {
   RepeatMode,
   useIsPlaying,
-  useProgress,
 } from '@rntp/player';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
 import { usePlayerUiStore } from '../../store/playerUiStore';
 import { useLibraryStore } from '../../store/libraryStore';
 import { useNowPlaying } from '../../hooks/useNowPlaying';
+import { usePlaybackProgress } from '../../hooks/usePlaybackProgress';
 import {
   cycleRepeatMode,
   togglePlayPause,
   toggleShuffle,
 } from '../../services/audio/player';
-import { formatDurationSeconds } from '../../utils/tracks';
+import { formatClock } from '../../utils/tracks';
 
 function ControlIcon({
   active,
@@ -73,9 +73,21 @@ export function NowPlayingModal() {
   const { width } = useWindowDimensions();
   const { track, activeId } = useNowPlaying();
   const playing = useIsPlaying();
-  const { position, duration } = useProgress(250);
+  const trackDurationSec = track?.durationMs ? track.durationMs / 1000 : 0;
+  const {
+    position,
+    duration,
+    seekTo,
+    setScrubbing: setProgressScrubbing,
+  } = usePlaybackProgress(activeId, trackDurationSec);
   const [repeat, setRepeat] = useState(RepeatMode.Off);
   const [shuffle, setShuffle] = useState(false);
+  const [scrubbing, setScrubbing] = useState(false);
+  const [scrubPosition, setScrubPosition] = useState(0);
+
+  const displayPosition = scrubbing
+    ? scrubPosition
+    : Math.min(Math.max(position, 0), duration > 0 ? duration : position);
 
   useEffect(() => {
     if (!visible) return;
@@ -99,6 +111,12 @@ export function NowPlayingModal() {
       // Native may not be ready yet.
     }
   }, [track?.id]);
+
+  useEffect(() => {
+    setScrubbing(false);
+    setScrubPosition(0);
+    setProgressScrubbing(false);
+  }, [activeId, setProgressScrubbing]);
 
   const artSize = Math.min(width - 64, 320);
   const favorited = !!track?.isFavorite;
@@ -215,23 +233,40 @@ export function NowPlayingModal() {
 
         <View style={styles.progress}>
           <Slider
-            style={{ width: '100%', height: 36 }}
+            key={`seek-${activeId ?? 'none'}`}
+            style={{ width: '100%', height: 40 }}
             minimumValue={0}
-            maximumValue={Math.max(duration, 1)}
-            value={position}
+            maximumValue={Math.max(duration, 0.1)}
+            value={Number.isFinite(displayPosition) ? displayPosition : 0}
             minimumTrackTintColor={colors.accent}
             maximumTrackTintColor={colors.progressTrack}
             thumbTintColor={colors.accent}
-            onSlidingComplete={(v) => TrackPlayer.seekTo(v)}
+            onSlidingStart={(v) => {
+              setScrubbing(true);
+              setProgressScrubbing(true);
+              setScrubPosition(v);
+            }}
+            onValueChange={(v) => {
+              setScrubPosition(v);
+            }}
+            onSlidingComplete={(v) => {
+              setScrubPosition(v);
+              setScrubbing(false);
+              setProgressScrubbing(false);
+              seekTo(v);
+            }}
           />
-          <View style={styles.times}>
-            <Text style={{ color: colors.textMuted, fontFamily: fonts.body, fontSize: 12 }}>
-              {formatDurationSeconds(position)}
-            </Text>
-            <Text style={{ color: colors.textMuted, fontFamily: fonts.body, fontSize: 12 }}>
-              {formatDurationSeconds(duration)}
-            </Text>
-          </View>
+          <Text
+            style={{
+              color: colors.textMuted,
+              fontFamily: fonts.bodyMedium,
+              fontSize: 13,
+              textAlign: 'center',
+              marginTop: 4,
+            }}
+          >
+            {formatClock(displayPosition)} / {formatClock(duration)}
+          </Text>
         </View>
 
         <View style={styles.controls}>
@@ -359,7 +394,6 @@ const styles = StyleSheet.create({
   artFallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   info: { marginTop: 20, marginBottom: 8 },
   progress: { marginTop: 12 },
-  times: { flexDirection: 'row', justifyContent: 'space-between' },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
