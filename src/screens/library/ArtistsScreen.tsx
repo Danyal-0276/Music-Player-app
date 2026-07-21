@@ -31,7 +31,6 @@ export function ArtistsScreen() {
       ) : (
         <FlashList
           data={artists}
-          estimatedItemSize={64}
           keyExtractor={(item) => item.name}
           contentContainerStyle={{ paddingBottom: 120 }}
           renderItem={({ item }) => (

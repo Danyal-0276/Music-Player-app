@@ -45,11 +45,6 @@ export async function setupAudioPlayer() {
     android: {
       wakeMode: 'local',
       taskRemovedBehavior: 'continue',
-      notification: {
-        channelId: 'harmonic_playback',
-        channelName: 'Music playback',
-        smallIcon: 'ic_launcher',
-      },
     },
   });
 

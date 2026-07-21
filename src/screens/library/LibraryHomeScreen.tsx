@@ -221,7 +221,6 @@ export function LibraryHomeScreen() {
       ) : (
         <FlashList
           data={data}
-          estimatedItemSize={72}
           keyExtractor={(item) => item.id}
           refreshControl={
             <RefreshControl

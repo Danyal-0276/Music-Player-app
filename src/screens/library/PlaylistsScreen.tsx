@@ -82,7 +82,6 @@ export function PlaylistsScreen() {
       ) : (
         <FlashList
           data={playlists}
-          estimatedItemSize={64}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 120 }}
           renderItem={({ item }) => (

@@ -35,7 +35,6 @@ export function AlbumsScreen() {
         <FlashList
           data={albums}
           numColumns={2}
-          estimatedItemSize={tile + 56}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
           renderItem={({ item }) => (
@@ -84,7 +83,6 @@ export function AlbumsScreen() {
       ) : (
         <FlashList
           data={albums}
-          estimatedItemSize={64}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 120 }}
           renderItem={({ item }) => (
