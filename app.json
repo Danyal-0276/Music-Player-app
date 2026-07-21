@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "Harmonic",
+    "slug": "harmonic",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "harmonic",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-dev-client",
+      "expo-font",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Harmonic needs photo library access only if you choose artwork from your gallery.",
+          "savePhotosPermission": false,
+          "isAccessMediaLocationEnabled": true,
+          "granularPermissions": ["audio"]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "kotlinVersion": "2.0.21"
+          }
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.harmonic.offlineplayer",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"],
+        "NSAppleMusicUsageDescription": "Harmonic needs access to play your local music library."
+      }
+    },
+    "android": {
+      "package": "com.harmonic.offlineplayer",
+      "adaptiveIcon": {
+        "backgroundColor": "#1A1410",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "READ_MEDIA_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "POST_NOTIFICATIONS",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "WAKE_LOCK"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

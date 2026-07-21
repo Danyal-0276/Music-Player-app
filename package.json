@@ -1,0 +1,51 @@
+{
+  "name": "project",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@expo-google-fonts/dm-sans": "^0.4.2",
+    "@expo-google-fonts/fraunces": "^0.4.1",
+    "@nodefinity/react-native-music-library": "^0.10.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/slider": "5.2.0",
+    "@react-navigation/bottom-tabs": "^7.18.12",
+    "@react-navigation/native": "^7.3.12",
+    "@react-navigation/native-stack": "^7.18.4",
+    "@rntp/player": "^5.7.0",
+    "@shopify/flash-list": "2.0.2",
+    "expo": "~57.0.7",
+    "expo-build-properties": "~57.0.6",
+    "expo-constants": "~57.0.6",
+    "expo-dev-client": "~57.0.7",
+    "expo-font": "~57.0.1",
+    "expo-image": "~57.0.1",
+    "expo-linking": "~57.0.3",
+    "expo-media-library": "~57.0.3",
+    "expo-navigation-bar": "~57.0.2",
+    "expo-sqlite": "~57.0.1",
+    "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-mmkv": "^4.3.2",
+    "react-native-nitro-modules": "^0.36.1",
+    "react-native-reanimated": "4.5.0",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "prebuild": "expo prebuild",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
+  },
+  "private": true
+}
